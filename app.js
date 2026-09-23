@@ -1,7 +1,7 @@
-import {stages,overview,combustionModes} from './content.js?v=compressor-1';
-import {EngineSimulation,clamp} from './simulation.js?v=compressor-1';
-import {Renderer,OrbitCamera} from './renderer.js?v=compressor-1';
-import {EngineScene,explodedX} from './scene.js?v=compressor-1';
+import {stages,overview,combustionModes} from './content.js?v=airflow-1';
+import {EngineSimulation,clamp} from './simulation.js?v=airflow-1';
+import {Renderer,OrbitCamera} from './renderer.js?v=airflow-1';
+import {EngineScene,explodedX} from './scene.js?v=airflow-1';
 
 const $=id=>document.getElementById(id);
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;

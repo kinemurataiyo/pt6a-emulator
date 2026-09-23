@@ -1,7 +1,7 @@
-import {MeshData,lathe,cylinder,ring,box,blade,bladeRing,torus,tube,gear,boltRing,matrix,rgb,TAU,rotateX} from './geometry.js?v=compressor-1';
-import {stages} from './content.js?v=compressor-1';
-import {pathPoint,clamp} from './simulation.js?v=compressor-1';
-import {buildImpeller} from './impeller.js?v=compressor-1';
+import {MeshData,lathe,cylinder,ring,box,blade,bladeRing,torus,tube,gear,boltRing,matrix,rgb,TAU,rotateX} from './geometry.js?v=airflow-1';
+import {stages} from './content.js?v=airflow-1';
+import {pathPoint,clamp} from './simulation.js?v=airflow-1';
+import {buildImpeller} from './impeller.js?v=airflow-1';
 
 const COLORS={metal:'#aebec5',dark:'#637b86',edge:'#c4c9c6',case:'#657780',hot:'#ab8b71',brass:'#caa775',shaft:'#ad98d0'};
 const offsets={propeller:-2.8,gearbox:-1.9,exhaust:-1.25,powerTurbine2:-.85,powerTurbine1:-.55,compressorTurbine:-.28,combustor:0,diffuser:.55,impeller:.85,axial3:1.2,axial2:1.55,axial1:1.9,inlet:2.25,accessories:2.8};
@@ -114,12 +114,20 @@ export class EngineScene {
   constructor(renderer){
     this.renderer=renderer;this.parts=buildEngine().map(p=>{const mesh=renderer.upload(p.data);return{...p,data:null,mesh};});
     this.gasAngle=0;this.freeAngle=0;this.propAngle=0;this.carrierAngle=0;this.clock=0;this.explode=0;this.particles=new Float32Array(8000*8);this.particleCount=0;this.view='cutaway';
+    this.coreFlowPhase=0;this.flamePhase=0;this.propFlowPhase=0;
     const grid=new MeshData();for(let x=-9;x<=9;x+=1)grid.append(box(.008,.008,8,'#27363e'),{x,y:-2.32});for(let z=-4;z<=4;z+=1)grid.append(box(18,.008,.008,'#27363e'),{y:-2.32,z});this.grid=renderer.upload(grid);
     const arrow=new MeshData();arrow.append(cylinder(.023,2.0,'#a9d9d2',16),{x:-.9});arrow.append(lathe([[-.38,0],[0,.16],[0,0]],'#a9d9d2',20),{x:-1.98});this.arrow=renderer.upload(arrow);
   }
   addParticle(x,y,z,c,alpha,size){const i=this.particleCount++*8;this.particles[i]=x;this.particles[i+1]=y;this.particles[i+2]=z;this.particles[i+3]=c[0];this.particles[i+4]=c[1];this.particles[i+5]=c[2];this.particles[i+6]=alpha;this.particles[i+7]=size;}
   animate(dt,sim,settings){
     const d=dt*settings.speed;this.clock+=d;
+    // Integrate travel using this frame's speed. Multiplying total uptime by
+    // current Ng rewrites past travel and reverses particles on power cuts.
+    const flow=Math.max(0,sim.ng/100);
+    this.coreFlowPhase=(this.coreFlowPhase+d*.070*flow)%1;
+    this.flamePhase=(this.flamePhase+d*(.28+.22*flow))%1;
+    const thrust=propellerFlow(sim);
+    if(Number.isFinite(thrust))this.propFlowPhase=wrapPhase(this.propFlowPhase+d*.17*Math.sign(thrust)*Math.sqrt(Math.abs(thrust)));
     // Aircraft forward is -X. Negative X rotation is clockwise from the rear:
     // the forward-pitched blade's leading edge advances toward the nose, so
     // its motion pushes air aft (+X). Reverse changes pitch, never shaft rotation.
@@ -175,7 +183,7 @@ export class EngineScene {
     // An assembled gas path is meaningful only while assemblies remain together.
     if(s.airflow&&flow>.015&&e<.08&&allowCore&&s.view!=='solid'&&!s.shafts){
       for(let i=0;i<850;i++){
-        const u=(i/850+t*.070*flow)%1,[x,rad,heat]=pathPoint(u),a=i*2.39996;
+        const u=(i/850+this.coreFlowPhase)%1,[x,rad,heat]=pathPoint(u),a=i*2.39996;
         if(comb&&(x>2.1||x<-.9))continue;
         if(heat>.1&&sim.flame<.03&&s.selected!=='combustor')continue;
         const col=heat>1?[.91,.49,.24]:heat>.1?[1,.64,.22]:u>.22?[.73,.84,.37]:[.31,.78,.94];
@@ -190,13 +198,17 @@ export class EngineScene {
       if(comb&&mode==='ignition'){const cycle=t%6;ignite=clamp((cycle-.6)/2,0,1);}
       if(!comb||mode==='flame'||mode==='ignition'||mode==='path'){
         for(let i=0;i<650;i++){
-          const nozzle=i%14,a=nozzle*TAU/14,age=(i*.618033+t*(.28+.22*flow))%1;
+          const nozzle=i%14,a=nozzle*TAU/14,age=(i*.618033+this.flamePhase)%1;
           if(comb&&mode==='ignition'&&nozzle/14>ignite+.05)continue;
-          const length=(.40+.8*intensity)*Math.max(.1,ignite),x=x0-.12+age*length;
+          // Lower fuel shortens the visible flame by fading/extinguishing its
+          // downstream particles, not by dragging their positions upstream.
+          const reach=(.40+.8*intensity)*Math.max(.1,ignite),distance=age*1.2;
+          if(distance>=reach)continue;
+          const life=distance/reach,x=x0-.12+distance;
           const spread=.025+.08*age,swirl=a+.06*Math.sin(age*12+t*2+i);
           const rad=.84+Math.sin(i*17.21+t*3)*spread;
-          const col=age<.17?[.23,.57,1]:age<.45?[1,.76,.34]:[1,.32+.25*(1-age),.09];
-          this.addParticle(x,rad*Math.cos(swirl),rad*Math.sin(swirl),col,(1-age)*.50*intensity*(comb?1.4:1),comb?12:8);
+          const col=life<.17?[.23,.57,1]:life<.45?[1,.76,.34]:[1,.32+.25*(1-life),.09];
+          this.addParticle(x,rad*Math.cos(swirl),rad*Math.sin(swirl),col,(1-life)*.50*intensity*(comb?1.4:1),comb?12:8);
         }
         if(comb&&mode==='ignition'&&t%6<1.4){for(let i=0;i<32;i++){const a=.75,rad=.84+i*.002;this.addParticle(-.12+x0+.06*Math.sin(i),rad*Math.cos(a),rad*Math.sin(a),[.5,.78,1],.8,8);}}
       }
@@ -214,9 +226,9 @@ export class EngineScene {
     if(prop&&s.airflow&&strength>.015){
       const reverse=thrust<0;
       for(let i=0;i<700;i++){
-        const u=(i/700+t*.17*Math.sqrt(strength))%1,x0=-4.65+explodedX('propeller',e),r0=.45+((i*23.717)%1)*1.72;
-        const x=reverse?x0+2.3-u*6:x0-2.3+u*6,rad=r0*(1-.2*u),a=i*2.39996-u*.4;
-        this.addParticle(x,rad*Math.cos(a),rad*Math.sin(a),[.36,.80,.84],.58*clamp(strength*1.5,0,1)*Math.sin(Math.PI*u),4.0);
+        const u=(i/700+this.propFlowPhase)%1,x0=-4.65+explodedX('propeller',e),r0=.45+((i*23.717)%1)*1.72;
+        const progress=reverse?1-u:u,x=x0-3+u*6,rad=r0*(1-.2*progress),a=i*2.39996-progress*.4;
+        this.addParticle(x,rad*Math.cos(a),rad*Math.sin(a),[.36,.80,.84],.58*clamp(strength*1.5,0,1)*Math.sin(Math.PI*progress),4.0);
       }
     }
     this.renderer.drawParticles(this.particles,this.particleCount);
@@ -232,3 +244,5 @@ export function propellerFlow(sim){
 }
 
 function multiplyLocal(a,b){const m=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)m[c*4+r]+=a[k*4+r]*b[c*4+k];return m;}
+
+const wrapPhase=value=>((value%1)+1)%1;

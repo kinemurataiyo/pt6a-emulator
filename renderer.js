@@ -1,4 +1,4 @@
-import {multiply,perspective,lookAt,transform,identity} from './geometry.js?v=compressor-1';
+import {multiply,perspective,lookAt,transform,identity} from './geometry.js?v=airflow-1';
 
 const vertex=`#version 300 es
 precision highp float;

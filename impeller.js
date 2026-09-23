@@ -1,4 +1,4 @@
-import {MeshData,TAU,rgb,lathe,norm,cross,sub} from './geometry.js?v=compressor-1';
+import {MeshData,TAU,rgb,lathe,norm,cross,sub} from './geometry.js?v=airflow-1';
 
 // Illustrative open centrifugal rotor, with its inlet toward +X. The gas
 // generator turns +Rx, so the inducer leans into that motion and the radial
