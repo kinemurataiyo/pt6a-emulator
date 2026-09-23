@@ -1,6 +1,6 @@
-import {MeshData,lathe,cylinder,ring,box,blade,bladeRing,torus,tube,gear,boltRing,matrix,rgb,TAU,rotateX} from './geometry.js';
-import {stages} from './content.js';
-import {pathPoint,clamp} from './simulation.js';
+import {MeshData,lathe,cylinder,ring,box,blade,bladeRing,torus,tube,gear,boltRing,matrix,rgb,TAU,rotateX} from './geometry.js?v=governor-1';
+import {stages} from './content.js?v=governor-1';
+import {pathPoint,clamp} from './simulation.js?v=governor-1';
 
 const COLORS={metal:'#aebec5',dark:'#637b86',edge:'#c4c9c6',case:'#657780',hot:'#ab8b71',brass:'#caa775',shaft:'#ad98d0'};
 const offsets={propeller:-2.8,gearbox:-1.9,exhaust:-1.25,powerTurbine2:-.85,powerTurbine1:-.55,compressorTurbine:-.28,combustor:0,diffuser:.55,impeller:.85,axial3:1.2,axial2:1.55,axial1:1.9,inlet:2.25,accessories:2.8};

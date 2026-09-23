@@ -1,7 +1,7 @@
-import {stages,overview,combustionModes} from './content.js';
-import {EngineSimulation,clamp} from './simulation.js';
-import {Renderer,OrbitCamera} from './renderer.js';
-import {EngineScene,explodedX} from './scene.js';
+import {stages,overview,combustionModes} from './content.js?v=governor-1';
+import {EngineSimulation,clamp} from './simulation.js?v=governor-1';
+import {Renderer,OrbitCamera} from './renderer.js?v=governor-1';
+import {EngineScene,explodedX} from './scene.js?v=governor-1';
 
 const $=id=>document.getElementById(id);
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
