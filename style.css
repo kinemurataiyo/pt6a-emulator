@@ -10,3 +10,40 @@
 .stage-button{font-size:14px}.sidebar-title .eyebrow,.inspector-heading .eyebrow{font-size:12px}.stage-group-label{font-size:11px}.overview-button small{font-size:12px}.view-header .eyebrow{font-size:12px}.view-header p{font-size:12px}.model-badge{font-size:11px}.view-tabs button,.toggle,.speed-select,.speed-select select,.explode-label{font-size:14px}.part-label{font-size:12px}.legend{font-size:12px}.viewport-caption{font-size:10px}.instrument>span{font-size:12px;white-space:normal;min-height:36px;align-items:flex-start}.instrument>span small{font-size:11px}.instrument strong small{font-size:12px}.run-state>.eyebrow{font-size:11px}.run-buttons .button{font-size:13px}.slider-control>span:first-child{font-size:13px;flex-wrap:wrap}.slider-control output{font-size:12px}.range-ends small{font-size:10px}.simulation-foot{font-size:11px}.detail-lead{font-size:16px}.detail-section h3{font-size:12px}.detail-section p{font-size:15px}.detail-note{font-size:14px!important}.detail-reading{font-size:12px!important}.stage-facts small{font-size:12px}.stage-facts strong{font-size:15px}.combustion-modes button{font-size:13px}.mode-description,.inline-select,.inline-select select{font-size:14px}.stage-actions .button{font-size:14px}.inspector-heading>span:last-child{font-size:11px}.energy-row>div>strong{font-size:14px}.energy-row small{font-size:12px}.text-button{font-size:13px}.side-foot p{font-size:14px}
 @media(max-width:1220px){.run-controls{grid-template-columns:1fr 1fr}.run-state{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between}.run-buttons{margin:0}.instrument>span{font-size:11px}.instrument strong small{font-size:10px}.view-header{min-height:140px}.view-header p{font-size:11px}.view-header .eyebrow{font-size:11px}.model-badge{font-size:10px}.part-label{font-size:11px}.visual-controls{gap:10px}.control-cluster.toggles{flex-wrap:wrap}.legend{font-size:11px}.sidebar-title .eyebrow{font-size:10px}.stage-button{font-size:13px}}
 @media(max-width:700px){.view-header{min-height:128px}.model-badge{font-size:9px}.view-header .eyebrow{font-size:10px}.view-header p{font-size:10px}.view-tabs button{font-size:12px}.part-label{font-size:10px}.camera-tools{gap:4px}.instrument-strip{grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}.instrument>span{font-size:11px;min-height:22px}.instrument strong{font-size:24px}.instrument strong small{font-size:11px;display:inline;margin-left:4px}.toggle,.speed-select,.speed-select select,.explode-label{font-size:13px}.visual-controls{gap:13px}.explode-label{margin-left:0}.legend{font-size:10px;gap:12px}.viewport-caption{font-size:8px}.run-state{flex-wrap:wrap}.run-buttons .button{font-size:13px}.run-state .eyebrow{max-width:none;font-size:11px}.slider-control>span:first-child{font-size:12px}.slider-control output{font-size:12px}.simulation-foot{font-size:11px}.stage-button{font-size:13px}.sidebar-title .eyebrow{font-size:12px}}
+
+/* The governor stays available independently of the selected engine assembly. */
+.control-help{font-size:12px;color:var(--muted);line-height:1.6;margin:7px 0 0}
+.prop-controls{margin-top:14px;border:1px solid #495347;border-radius:6px;background:var(--panel);padding:18px 20px}
+.prop-controls-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:17px;flex-wrap:wrap}
+.prop-controls-heading .eyebrow{font-size:12px;color:var(--accent)}
+.prop-control-inputs{display:grid;grid-template-columns:minmax(200px,1fr) minmax(160px,1fr);gap:12px 20px;align-items:center}
+.prop-mode-control{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text)}
+.prop-mode-control select{width:100%;min-width:0;background:var(--panel-2);border:1px solid #52606a;color:var(--text);padding:10px 9px;border-radius:4px;font:inherit}
+.prop-control-inputs>.control-help{margin:0}
+.beta-control{grid-column:1/-1;padding:8px 0 0}
+.beta-control[hidden],.prop-protection[hidden]{display:none}
+.prop-feedback{display:grid;grid-template-columns:minmax(190px,1fr) minmax(170px,1fr);gap:20px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.pitch-study{display:flex;flex-direction:column;justify-content:center}
+.pitch-profile{width:100%;max-width:280px;height:125px;overflow:visible;align-self:center}
+.profile-axis{stroke:#4f6068;stroke-width:1;stroke-dasharray:3 4;fill:none}
+.pitch-profile text{fill:var(--muted);font-family:var(--mono);font-size:10px}
+.profile-blade{fill:#b5ced0;stroke:#e0efed;stroke-width:1}
+.profile-chord{stroke:var(--accent);stroke-width:1.5;fill:none}
+.profile-center{fill:var(--accent)}
+.pitch-reading{display:flex;align-items:center;flex-wrap:wrap;gap:5px 12px}
+.pitch-reading>span,.prop-status>div>span{font:10px var(--mono);letter-spacing:.04em;color:var(--muted)}
+.pitch-reading strong{font:25px var(--mono);color:var(--accent)}
+.pitch-reading small{display:block;flex-basis:100%;font-size:11px;color:var(--faint)}
+.prop-status{display:flex;flex-direction:column;justify-content:center;gap:17px;min-width:0}
+.prop-status>div{display:flex;flex-direction:column;gap:5px}
+.prop-speed strong{font:23px var(--mono)}
+.prop-speed strong small{font:12px var(--sans);margin-left:5px;color:var(--muted)}
+.prop-status>div>small{font-size:12px;color:var(--muted);line-height:1.5}
+.governor-action strong{font-size:14px;font-weight:500;line-height:1.5;color:var(--green)}
+.prop-controls[data-oil-flow=drain] .governor-action strong{color:var(--accent)}
+.prop-controls[data-oil-flow=supply] .governor-action strong{color:var(--cyan)}
+.prop-control-note{font-size:12px;line-height:1.65;color:var(--muted);margin:17px 0 0;padding-top:13px;border-top:1px solid var(--line)}
+.prop-protection{font-size:12px;color:var(--accent);border-left:2px solid var(--accent);padding-left:9px;margin:0;line-height:1.5}
+@media(max-width:1220px){.prop-control-inputs{grid-template-columns:1fr}.prop-feedback{gap:15px;grid-template-columns:minmax(150px,1fr) minmax(150px,1fr)}}
+@media(max-width:700px){.prop-controls{padding:17px 14px}.prop-controls-heading{gap:9px}.prop-controls-heading .eyebrow{font-size:11px}.prop-controls-heading .text-button{font-size:12px}.prop-feedback{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}.pitch-profile{height:105px}.pitch-reading>span,.prop-status>div>span{font-size:9px}.pitch-reading strong{font-size:23px}.prop-speed strong{font-size:21px}.governor-action strong{font-size:13px}}
+@media(max-width:390px){.prop-feedback{grid-template-columns:1fr}.pitch-study{flex-direction:row;align-items:center;gap:8px}.pitch-profile{width:52%;height:110px;flex-shrink:0}.pitch-reading>span{font-size:10px}.prop-status{display:grid;grid-template-columns:1fr 1fr;gap:12px}.prop-protection{grid-column:1/-1}}

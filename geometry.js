@@ -53,13 +53,18 @@ export function box(w,h,d,color='#8d999f'){
 export function blade({root=.3,tip=.8,chord=.22,twist=.7,sweep=.12,color='#aab9c0',spans=7,sides=14,prop=false}={}){
   const m=new MeshData(),c=rgb(color),surface=[];
   for(let j=0;j<=spans;j++){
-    const t=j/spans,r=root+(tip-root)*t,angle=twist*(1-.5*t);
+    const t=j/spans,r=root+(tip-root)*t;
+    // Propeller pitch is measured from the disc plane at 75% blade radius.
+    // Start its chord in the YZ disc, with twist about that reference station;
+    // the scene then applies the actual collective pitch around the radial Y axis.
+    const reference=(tip*.75-root)/(tip-root);
+    const angle=prop?Math.PI/2+twist*(reference-t):twist*(1-.5*t);
     const width=chord*(prop?(.45+.7*Math.sin(Math.PI*t*.85)):(1-.2*t));
     const points=[];
     for(let k=0;k<sides;k++){
       const a=TAU*k/sides,u=Math.cos(a)*.5,v=Math.sin(a)*(.045+.035*Math.sin(Math.PI*t));
       let xx=u*width,zz=v*width+.065*width*(1-4*u*u);
-      const p=[xx*Math.cos(angle)+zz*Math.sin(angle)+sweep*t*t,r,-xx*Math.sin(angle)+zz*Math.cos(angle)];points.push(p);
+      const p=[xx*Math.cos(angle)+zz*Math.sin(angle)+(prop?0:sweep*t*t),r,-xx*Math.sin(angle)+zz*Math.cos(angle)+(prop?sweep*t*t:0)];points.push(p);
     }surface.push(points);
   }
   // Triangulate with smooth normals accumulated from adjacent surface patches.
@@ -74,7 +79,7 @@ export function blade({root=.3,tip=.8,chord=.22,twist=.7,sweep=.12,color='#aab9c
   }
   for(let j=0;j<=spans;j++)for(let k=0;k<sides;k++)m.v(surface[j][k],norm(ns[j][k]),prop&&j/spans>.92?rgb('#f1eee1'):c);
   for(const tri of triples)m.tri(...tri.map(([s,q])=>s*sides+q));
-  for(const j of [0,spans]){const center=m.v([sweep*(j/spans)**2,root+(tip-root)*j/spans,0],[0,j?1:-1,0],c);for(let k=0;k<sides;k++)m.tri(center,j*sides+k,j*sides+(k+1)%sides);}
+  for(const j of [0,spans]){const sweepOffset=sweep*(j/spans)**2,center=m.v([prop?0:sweepOffset,root+(tip-root)*j/spans,prop?sweepOffset:0],[0,j?1:-1,0],c);for(let k=0;k<sides;k++)m.tri(center,j*sides+k,j*sides+(k+1)%sides);}
   return m;
 }
 
