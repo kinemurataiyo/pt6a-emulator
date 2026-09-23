@@ -1,6 +1,7 @@
-import {MeshData,lathe,cylinder,ring,box,blade,bladeRing,torus,tube,gear,boltRing,matrix,rgb,TAU,rotateX} from './geometry.js?v=governor-2';
-import {stages} from './content.js?v=governor-2';
-import {pathPoint,clamp} from './simulation.js?v=governor-2';
+import {MeshData,lathe,cylinder,ring,box,blade,bladeRing,torus,tube,gear,boltRing,matrix,rgb,TAU,rotateX} from './geometry.js?v=compressor-1';
+import {stages} from './content.js?v=compressor-1';
+import {pathPoint,clamp} from './simulation.js?v=compressor-1';
+import {buildImpeller} from './impeller.js?v=compressor-1';
 
 const COLORS={metal:'#aebec5',dark:'#637b86',edge:'#c4c9c6',case:'#657780',hot:'#ab8b71',brass:'#caa775',shaft:'#ad98d0'};
 const offsets={propeller:-2.8,gearbox:-1.9,exhaust:-1.25,powerTurbine2:-.85,powerTurbine1:-.55,compressorTurbine:-.28,combustor:0,diffuser:.55,impeller:.85,axial3:1.2,axial2:1.55,axial1:1.9,inlet:2.25,accessories:2.8};
@@ -13,12 +14,14 @@ export function buildEngine(){
   for(let i=0;i<3;i++){
     const id='axial'+(i+1),r=[.78,.73,.67][i],hub=[.29,.32,.35][i];
     const rotor=new MeshData().append(cylinder(hub,.22,COLORS.dark));
-    rotor.append(bladeRing(24+i*5,{root:hub,tip:r,chord:.20-i*.01,twist:.88-i*.05,sweep:.055,color:COLORS.metal}));
+    // Gas rotation is +Rx (CCW from the rear). Mirror the rotor airfoil so it
+    // drives inlet air forward through the core (-X), adding positive swirl.
+    rotor.append(bladeRing(24+i*5,{root:hub,tip:r,chord:.20-i*.01,twist:-(.88-i*.05),camber:-.065,sweep:.055,color:COLORS.metal}));
     rotor.append(ring(hub+.016,.026,.17,COLORS.edge));
     rotor.append(boltRing(hub*.75,8,.055),{x:.13});
-    put(id,rotor,{spin:'gas'});
-    const fixed=new MeshData().append(bladeRing(27+i*5,{root:hub+.025,tip:r+.016,chord:.13,twist:-.55,sweep:-.04,color:'#859ba5'}),{x:-.24});
-    fixed.append(ring(r+.037,.035,.11,COLORS.edge),{x:-.24});put(id,fixed);
+    put(id,rotor,{spin:'gas',bladeRow:'rotor'});
+    const fixed=new MeshData().append(bladeRing(27+i*5,{root:hub+.025,tip:r+.016,chord:.13,twist:.55,sweep:-.04,color:'#859ba5'}),{x:-.24});
+    fixed.append(ring(r+.037,.035,.11,COLORS.edge),{x:-.24});put(id,fixed,{bladeRow:'stator'});
     const shell=lathe([[-.32,r+.018],[-.32,r+.065],[.26,r+.09],[.26,r+.043],[-.32,r+.018]],COLORS.case);
     shell.append(ring(r+.095,.045,.06,COLORS.edge),{x:.23});shell.append(boltRing(r+.083,20),{x:.28});put(id,shell,{shell:true});
   }
@@ -30,22 +33,8 @@ export function buildEngine(){
   const inletScreen=new MeshData();
   for(let i=0;i<9;i++)inletScreen.append(torus(.84+i*.018,.007,'#52636b',64,4),{x:.13+i*.022});
   put('inlet',inletScreen,{shell:true});
-  // Centrifugal impeller: curved passages from the eye to the rim.
-  const impeller=lathe([[-.14,.08],[-.14,.93],[-.045,.96],[.04,.78],[.17,.47],[.28,.29],[.28,.08]],'#aab3b4');
-  for(let k=0;k<22;k++){
-    const a=k*TAU/22,pts=[];
-    for(let j=0;j<=12;j++){const t=j/12,r=.29+.63*t,angle=a+.5*t*t;pts.push([.23-.30*t,r*Math.cos(angle),r*Math.sin(angle)]);}
-    impeller.append(tube(pts,.017,'#c7c9b8',6));
-    // Radial vane wall, thicker at the hub and narrowing at the rim.
-    const vane=new MeshData(),col=rgb('#b8c4c5');
-    for(let j=0;j<12;j++){
-      const t=j/12,t1=(j+1)/12;
-      const point=(u,h)=>[.23-.30*u-h,(.29+.63*u)*Math.cos(a+.5*u*u),(.29+.63*u)*Math.sin(a+.5*u*u)];
-      const p=[point(t,0),point(t1,0),point(t1,.11),point(t,.11)];
-      const n=[0,-Math.sin(a+.5*t*t),Math.cos(a+.5*t*t)],o=vane.vertices.length/9;for(const q of p)vane.v(q,n,col);vane.tri(o,o+1,o+2);vane.tri(o,o+2,o+3);
-    }impeller.append(vane);
-  }
-  impeller.append(cylinder(.16,.48,COLORS.dark));put('impeller',impeller,{spin:'gas'});
+  // Open impeller: raised inducer and curved vanes above a dished backplate.
+  put('impeller',buildImpeller(),{spin:'gas'});
   const impellerCase=lathe([[-.22,.98],[-.22,1.09],[.12,1.09],[.32,.78],[.32,.73],[.08,1.01],[-.22,.98]],COLORS.case);
   impellerCase.append(boltRing(1.07,24),{x:-.24});put('impeller',impellerCase,{shell:true});
   const diffuser=new MeshData();
@@ -135,7 +124,11 @@ export class EngineScene {
     // the forward-pitched blade's leading edge advances toward the nose, so
     // its motion pushes air aft (+X). Reverse changes pitch, never shaft rotation.
     const outputStep=-d*(sim.np/1700)*1.9;
-    this.gasAngle=(this.gasAngle+d*(sim.ng/100)*1.8)%TAU;
+    // Dense blade rows can appear to run backward at low frame rates (wagon-
+    // wheel aliasing). Bound only the study animation step below half a blade
+    // spacing of the 40-blade compressor turbine; simulated Ng is unchanged.
+    const gasStep=Math.min(d*(sim.ng/100)*1.8,.4*TAU/40);
+    this.gasAngle=(this.gasAngle+gasStep)%TAU;
     this.freeAngle=(this.freeAngle+outputStep)%TAU;
     this.carrierAngle=(this.carrierAngle+outputStep/5.78)%TAU;
     this.propAngle=(this.propAngle+outputStep/17.58)%TAU;
@@ -159,7 +152,7 @@ export class EngineScene {
       if(p.shell||p.liner){
         clip=s.view==='cutaway';
         if(s.view==='xray')alpha=p.liner?.14:.09;
-        if(s.isolate&&selected==='combustor'&&p.shell)alpha=.07;
+        if(s.isolate&&(selected==='combustor'||selected==='impeller')&&p.shell)alpha=.07;
       }
       if(s.shafts&&!p.shaft&&p.id!=='gearbox')alpha=Math.min(alpha,.22);
       if(p.shaft&&s.shafts)emissive=.7;

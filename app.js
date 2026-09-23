@@ -1,7 +1,7 @@
-import {stages,overview,combustionModes} from './content.js?v=governor-2';
-import {EngineSimulation,clamp} from './simulation.js?v=governor-2';
-import {Renderer,OrbitCamera} from './renderer.js?v=governor-2';
-import {EngineScene,explodedX} from './scene.js?v=governor-2';
+import {stages,overview,combustionModes} from './content.js?v=compressor-1';
+import {EngineSimulation,clamp} from './simulation.js?v=compressor-1';
+import {Renderer,OrbitCamera} from './renderer.js?v=compressor-1';
+import {EngineScene,explodedX} from './scene.js?v=compressor-1';
 
 const $=id=>document.getElementById(id);
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -59,7 +59,8 @@ function selectStage(id,focus=true){
   const s=stages.find(q=>q.id===id);
   $('view-eyebrow').textContent=s?`${s.group} / ${s.n}`:'PRATT & WHITNEY CANADA';
   $('view-title').textContent=s?s.name:'The power behind the propeller.';
-  $('view-subtitle').textContent=s?(s.id==='combustor'?'Fuel, flame, cooling air, and a folded gas path':s.id==='propeller'?'Follow shaft power into the surrounding air stream':'Select · isolate · orbit around the assembly'):'PT6A–60A · King Air 350 · 1,050 shp rated shaft power';
+  const gasRotor=s&&['axial1','axial2','axial3','impeller','compressorTurbine'].includes(s.id);
+  $('view-subtitle').textContent=s?(gasRotor?'Counterclockwise viewed from the rear · shared gas-generator shaft':s.id==='combustor'?'Fuel, flame, cooling air, and a folded gas path':s.id==='propeller'?'Follow shaft power into the surrounding air stream':'Select · isolate · orbit around the assembly'):'PT6A–60A · King Air 350 · 1,050 shp rated shaft power';
   if(!id){settings.isolate=false;syncToggle('isolate',false);}
   if(id==='combustor'){setView('cutaway');settings.shafts=false;syncToggle('power-toggle',false);}
   if(id==='propeller'){settings.airflow=true;syncToggle('flow-toggle',true);}
@@ -72,7 +73,8 @@ function focusSelection(){
   const x=s.x+explodedX(s.id,settings.explode);
   let distance=s.id==='propeller'?8.5:s.id==='combustor'?6.4:s.id==='gearbox'?4.9:4.6;
   if(aspect<1.1)distance*=1.2;
-  camera.focus([x,.02,0],distance,{yaw:s.id==='propeller'?-.65:-.18,pitch:.28});
+  // Look into the impeller's inlet face so its open passages are visible.
+  camera.focus([x,.02,0],distance,{yaw:s.id==='propeller'?-.65:s.id==='impeller'?1.05:-.18,pitch:s.id==='impeller'?.4:.28});
 }
 function setView(view){settings.view=view;document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));}
 function syncToggle(id,on){$(id).classList.toggle('active',on);$(id).setAttribute('aria-pressed',String(on));}
