@@ -1,6 +1,6 @@
-import {MeshData,lathe,cylinder,ring,box,blade,bladeRing,torus,tube,gear,boltRing,matrix,rgb,TAU,rotateX} from './geometry.js?v=governor-1';
-import {stages} from './content.js?v=governor-1';
-import {pathPoint,clamp} from './simulation.js?v=governor-1';
+import {MeshData,lathe,cylinder,ring,box,blade,bladeRing,torus,tube,gear,boltRing,matrix,rgb,TAU,rotateX} from './geometry.js?v=governor-2';
+import {stages} from './content.js?v=governor-2';
+import {pathPoint,clamp} from './simulation.js?v=governor-2';
 
 const COLORS={metal:'#aebec5',dark:'#637b86',edge:'#c4c9c6',case:'#657780',hot:'#ab8b71',brass:'#caa775',shaft:'#ad98d0'};
 const offsets={propeller:-2.8,gearbox:-1.9,exhaust:-1.25,powerTurbine2:-.85,powerTurbine1:-.55,compressorTurbine:-.28,combustor:0,diffuser:.55,impeller:.85,axial3:1.2,axial2:1.55,axial1:1.9,inlet:2.25,accessories:2.8};
@@ -130,7 +130,15 @@ export class EngineScene {
   }
   addParticle(x,y,z,c,alpha,size){const i=this.particleCount++*8;this.particles[i]=x;this.particles[i+1]=y;this.particles[i+2]=z;this.particles[i+3]=c[0];this.particles[i+4]=c[1];this.particles[i+5]=c[2];this.particles[i+6]=alpha;this.particles[i+7]=size;}
   animate(dt,sim,settings){
-    const d=dt*settings.speed;this.clock+=d;this.gasAngle=(this.gasAngle-d*(sim.ng/100)*1.8)%TAU;this.freeAngle=(this.freeAngle+d*(sim.np/1700)*1.9)%TAU;this.carrierAngle=(this.carrierAngle+d*(sim.np/1700)*1.9/5.78)%TAU;this.propAngle=(this.propAngle+d*(sim.np/1700)*1.9/17.58)%TAU;
+    const d=dt*settings.speed;this.clock+=d;
+    // Aircraft forward is -X. Negative X rotation is clockwise from the rear:
+    // the forward-pitched blade's leading edge advances toward the nose, so
+    // its motion pushes air aft (+X). Reverse changes pitch, never shaft rotation.
+    const outputStep=-d*(sim.np/1700)*1.9;
+    this.gasAngle=(this.gasAngle+d*(sim.ng/100)*1.8)%TAU;
+    this.freeAngle=(this.freeAngle+outputStep)%TAU;
+    this.carrierAngle=(this.carrierAngle+outputStep/5.78)%TAU;
+    this.propAngle=(this.propAngle+outputStep/17.58)%TAU;
     this.explode+=(settings.explode-this.explode)*(1-Math.exp(-dt*6));
   }
   draw(sim,s){
@@ -214,7 +222,7 @@ export class EngineScene {
       const reverse=thrust<0;
       for(let i=0;i<700;i++){
         const u=(i/700+t*.17*Math.sqrt(strength))%1,x0=-4.65+explodedX('propeller',e),r0=.45+((i*23.717)%1)*1.72;
-        const x=reverse?x0+2.3-u*6:x0-2.3+u*6,rad=r0*(1-.2*u),a=i*2.39996+u*.4;
+        const x=reverse?x0+2.3-u*6:x0-2.3+u*6,rad=r0*(1-.2*u),a=i*2.39996-u*.4;
         this.addParticle(x,rad*Math.cos(a),rad*Math.sin(a),[.36,.80,.84],.58*clamp(strength*1.5,0,1)*Math.sin(Math.PI*u),4.0);
       }
     }

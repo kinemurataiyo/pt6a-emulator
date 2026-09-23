@@ -63,7 +63,9 @@ export function blade({root=.3,tip=.8,chord=.22,twist=.7,sweep=.12,color='#aab9c
     const points=[];
     for(let k=0;k<sides;k++){
       const a=TAU*k/sides,u=Math.cos(a)*.5,v=Math.sin(a)*(.045+.035*Math.sin(Math.PI*t));
-      let xx=u*width,zz=v*width+.065*width*(1-4*u*u);
+      // A tractor propeller's convex face is forward (-X after the disc-plane
+      // rotation); keep the existing camber convention for turbine airfoils.
+      let xx=u*width,zz=v*width+(prop?-.065:.065)*width*(1-4*u*u);
       const p=[xx*Math.cos(angle)+zz*Math.sin(angle)+(prop?0:sweep*t*t),r,-xx*Math.sin(angle)+zz*Math.cos(angle)+(prop?sweep*t*t:0)];points.push(p);
     }surface.push(points);
   }

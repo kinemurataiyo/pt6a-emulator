@@ -2,6 +2,12 @@
 
 The propeller control selects a speed. The simulation adjusts actual blade angle to change aerodynamic load, and the balance between driving torque and propeller load changes actual RPM. Blade angle, shaft speed, the instruments, and the rendered blades share that state.
 
+## Rotation and pitch convention
+
+Aircraft forward is the model's negative X direction; normal propeller slipstream travels aft in positive X. The output shaft, reduction carriers, and propeller rotate together about negative X (clockwise when viewed from the rear). At positive blade pitch, the advancing blade edge is toward the nose, so the blade's motion drives air aft. The propeller's cambered face also curves toward the nose, consistent with forward thrust. Reverse changes the blade angle and axial airflow without reversing shaft rotation. The gas generator rotates in the opposite direction. Study animation retains the existing slowed shaft-speed ratios.
+
+The supplied manual defines directions as viewed from the rear on page 2 and describes counterclockwise compressor rotation in its Compressor Turbine Rotor Assembly section. A geometric regression check verifies the direction of blade motion against the actual rendered pitch on all four blades, including fine forward pitch and reverse. This sign check supplements the angle readout; it is not a calibrated aerodynamic calculation.
+
 ## Control behavior
 
 | Condition | Simulated action | Expected response |
