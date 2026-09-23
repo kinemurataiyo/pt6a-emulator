@@ -30,7 +30,7 @@ function renderDetail(){
   }else{
     html+=`<div class="detail-symbol">${s.symbol}</div><h2>${s.title}</h2><p class="detail-lead">${s.lead}</p><div class="stage-facts">${s.facts.map(([a,b])=>`<div><small>${a}</small><strong>${b}</strong></div>`).join('')}</div>`;
     if(s.id==='combustor')html+=`<section class="detail-section"><h3>INSIDE THE COMBUSTOR</h3><div class="combustion-modes" role="group" aria-label="Combustion animation">${Object.entries(combustionModes).map(([id,m])=>`<button data-combustion="${id}" class="${settings.combustionMode===id?'active':''}" aria-pressed="${settings.combustionMode===id}">${m.name}</button>`).join('')}</div><p class="mode-description" id="mode-description" aria-live="polite">${combustionModes[settings.combustionMode].description}</p></section>`;
-    if(s.id==='propeller')html+=`<label class="inline-select">Blade orientation study<select id="prop-mode"><option value="govern">Governed forward thrust</option><option value="feather">Feather · reduced drag</option><option value="reverse">Reverse · ground deceleration</option></select></label>`;
+    if(s.id==='propeller')html+=`<p class="detail-note">Use the Propeller governor panel below the engine controls to change selected RPM, select Feather, or explore the ground beta and reverse ranges. The pitch readout and blade profile show the actual blade angle as it changes.</p><button id="show-prop-controls" class="button">Go to propeller controls ↓</button>`;
     html+=s.sections.map(([a,b])=>detailSection(a,b)).join('');
     if(s.equation)html+=`<p class="science-equation">${s.equation}</p>`;
     html+=`<p class="detail-note">${s.note}</p><p class="detail-reading">Schematic construction · see Model notes for sources and limitations.</p>`;
@@ -48,7 +48,7 @@ function renderDetail(){
     $('mode-description').textContent=combustionModes[settings.combustionMode].description;
     if(sim.state==='off'||sim.state==='stopping')sim.restart();
   }));
-  const propMode=$('prop-mode');if(propMode){propMode.value=sim.propMode;propMode.addEventListener('change',()=>{sim.propMode=propMode.value;});}
+  $('show-prop-controls')?.addEventListener('click',()=>{$('prop-controls').scrollIntoView({behavior:reduced?'instant':'smooth',block:'center'});$('prop-mode').focus({preventScroll:true});});
 }
 
 function selectStage(id,focus=true){
@@ -114,8 +114,11 @@ $('home-camera').addEventListener('click',()=>{if(!camera)return;camera.auto=fal
 $('auto-orbit').addEventListener('click',()=>{if(!camera)return;camera.auto=!camera.auto;$('auto-orbit').setAttribute('aria-pressed',String(camera.auto));});
 $('fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else if($('viewport').requestFullscreen)await $('viewport').requestFullscreen();}catch{/* Embedded browsers may not allow fullscreen. */}});
 document.addEventListener('fullscreenchange',()=>{$('fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit full screen':'Enter full screen');});
-$('power').addEventListener('input',()=>{sim.power=Number($('power').value)/100;$('power-output').textContent=Math.round(sim.power*100)+'%';});
-$('rpm').addEventListener('input',()=>{sim.governor=Number($('rpm').value);$('rpm-output').textContent=sim.governor.toLocaleString()+' rpm';});
+$('power').addEventListener('input',()=>{sim.power=Number($('power').value)/100;$('power-output').textContent=Math.round(sim.power*100)+'%';setPaused(false);});
+$('rpm').addEventListener('input',()=>{sim.governor=Number($('rpm').value);$('rpm-output').textContent=sim.governor.toLocaleString()+' rpm';setPaused(false);});
+$('prop-mode').addEventListener('change',()=>{sim.propMode=$('prop-mode').value;setPaused(false);readings();});
+$('beta').addEventListener('input',()=>{sim.betaPosition=Number($('beta').value)/100;setPaused(false);readings();});
+$('inspect-prop').addEventListener('click',()=>{selectStage('propeller');$('viewport').scrollIntoView({behavior:reduced?'instant':'smooth',block:'center'});});
 $('start').addEventListener('click',()=>{sim.restart();setPaused(false);});
 $('stop').addEventListener('click',()=>{sim.shutdown();setPaused(false);});
 $('about').addEventListener('click',()=>{$('about-dialog').showModal();});
@@ -131,6 +134,22 @@ function readings(){
   if($('sequence-note').textContent!==note)$('sequence-note').textContent=note;
   $('start').disabled=sim.state==='starting';
   document.querySelector('.live-dot').style.background=sim.state==='off'?'#708087':sim.state==='starting'?'#f0ad72':'#9cbca5';
+  $('prop-mode').value=sim.propMode;
+  $('beta-control').hidden=sim.propMode!=='beta';
+  $('beta-output').textContent=(15*(1-sim.betaPosition)).toFixed(1)+'° selected';
+  $('pitch-value').textContent=sim.pitch.toFixed(1)+'°';
+  $('pitch-profile-blade').setAttribute('transform',`rotate(${-sim.pitch} 114 75)`);
+  $('pitch-profile-title').textContent=`Actual blade angle ${sim.pitch.toFixed(1)} degrees at 75 percent radius`;
+  set('prop-actual-rpm',Math.round(sim.np).toLocaleString(),'rpm');
+  const rpmError=Math.round(sim.np-sim.governor),rpmDelta=Math.abs(rpmError)<=10?'on speed':`${Math.abs(rpmError).toLocaleString()} rpm ${rpmError>0?'above':'below'} selected`;
+  $('prop-rpm-error').textContent=sim.propMode==='govern'?`Selected ${sim.governor.toLocaleString()} rpm · ${rpmDelta}`:sim.propMode==='feather'?'Feather selected · RPM selection bypassed':'Ground range · speed limited by fuel governor';
+  if($('governor-state').textContent!==sim.governorState)$('governor-state').textContent=sim.governorState;
+  $('prop-oil-flow').textContent={supply:'Oil → hub · driving toward finer pitch',drain:sim.pitch>=83.95?'Drain open · blades at feather stop':'Oil ← hub · driving toward coarser pitch',blocked:'Oil held · no commanded pitch change'}[sim.oilFlow]||'Oil held';
+  $('prop-controls').dataset.oilFlow=sim.oilFlow;
+  const protection=[sim.overspeedActive?'Overspeed governor active':null,sim.fuelGovernorActive?'Fuel topping governor active':null].filter(Boolean).join(' · ');
+  $('prop-protection').hidden=!protection;$('prop-protection').textContent=protection;
+  $('prop-mode-help').textContent={govern:'Change the selected RPM or power demand and watch the governor adjust pitch.',feather:'Oil drains from the hub. The counterweights and spring turn the blades toward feather; selected RPM is bypassed.',beta:'Ground range: beta feedback sets blade angle from the fine stop toward flat pitch. The fuel governor limits speed.',reverse:'Ground range: power demand sets reverse blade angle and shaft power. Slipstream reverses only after actual pitch passes through zero.'}[sim.propMode];
+  $('rpm-help').textContent=sim.propMode==='govern'?'The governor changes blade pitch to hold this speed.':sim.propMode==='feather'?'RPM selection is bypassed while feather is selected.':'The ground range uses blade-angle control and fuel governing.';
 }
 
 function frame(time){

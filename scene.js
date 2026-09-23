@@ -107,7 +107,7 @@ export function buildEngine(){
   put('propeller',cylinder(.16,1.13,'#c1c6c8'),{x:-4.06,spin:'prop',shaft:true});
   const hub=new MeshData().append(cylinder(.285,.35,'#8f9da0'));hub.append(lathe([[-.5,0],[-.45,.12],[-.30,.25],[-.12,.34],[.17,.33]],'#c6cdcc',64));hub.append(boltRing(.272,12),{x:.19});put('propeller',hub,{spin:'prop'});
   for(let k=0;k<4;k++){
-    const b=blade({root:.29,tip:2.20,chord:.31,twist:.5,sweep:.23,color:'#c4ced0',spans:18,sides:18,prop:true});
+    const b=blade({root:.29,tip:2.20,chord:.31,twist:.38,sweep:.23,color:'#c4ced0',spans:18,sides:18,prop:true});
     put('propeller',b,{spin:'prop',propBlade:k});
   }
   // Rear accessory casing and a schematic starter-generator.
@@ -146,7 +146,7 @@ export class EngineScene {
       const angle=p.spin==='gas'?this.gasAngle:p.spin==='free'?this.freeAngle:p.spin==='carrier1'?this.carrierAngle:p.spin==='prop'?this.propAngle:0;rx=angle;
       if(p.planet){const q=p.planet,carrier=q.stage?this.propAngle:this.carrierAngle,sun=q.stage?this.carrierAngle:this.freeAngle,a=q.index*TAU/q.count+carrier;y=q.center*Math.cos(a);z=q.center*Math.sin(a);rx=carrier-(sun-carrier)*q.sunR/q.planetR;}
       let model=matrix({x,y,z,rx});
-      if(p.propBlade!==undefined){const a=this.propAngle+p.propBlade*TAU/4;model=matrix({x});const pitch=(sim.pitch-30)*Math.PI/180;model=multiplyLocal(model,multiplyLocal(matrix({rx:a}),matrix({ry:pitch})));}
+      if(p.propBlade!==undefined){const a=this.propAngle+p.propBlade*TAU/4;model=matrix({x});const pitch=sim.pitch*Math.PI/180;model=multiplyLocal(model,multiplyLocal(matrix({rx:a}),matrix({ry:pitch})));}
       let alpha=1,clip=false,emissive=0;
       if(p.shell||p.liner){
         clip=s.view==='cutaway';
@@ -162,8 +162,9 @@ export class EngineScene {
     }
     for(const q of opaque)r.draw(q.p.mesh,q.model,q.opts);
     transparent.sort((a,b)=>Math.abs(b.p.x-r.eye[0])-Math.abs(a.p.x-r.eye[0]));for(const q of transparent)r.draw(q.p.mesh,q.model,q.opts);
-    if(selected==='propeller'){
-      const reverse=sim.propMode==='reverse',x=-4.55+explodedX('propeller',this.explode);r.draw(this.arrow,matrix({x,y:2.5,ry:reverse?Math.PI:0}),{emissive:.5});
+    const thrust=propellerFlow(sim);
+    if(selected==='propeller'&&Math.abs(thrust)>.025){
+      const reverse=thrust<0,x=-4.55+explodedX('propeller',this.explode);r.draw(this.arrow,matrix({x,y:2.5,ry:reverse?Math.PI:0}),{emissive:.5,alpha:clamp(Math.abs(thrust)*1.5,0,1)});
     }
     this.drawFlows(sim,s);
   }
@@ -208,16 +209,25 @@ export class EngineScene {
         for(let i=0;i<750;i++){const a=i*2.39996,age=(i*.41421+t*.30)%1,x=-.01+x0+age*1.2,rad=i%2?.975-.1*age:.706+.06*age;this.addParticle(x,rad*Math.cos(a),rad*Math.sin(a),[.29,.78,.99],.8,5);}
       }
     }
-    if(prop&&s.airflow&&sim.np>30){
-      const reverse=sim.propMode==='reverse',feather=sim.propMode==='feather';
+    const thrust=propellerFlow(sim),strength=Math.abs(thrust);
+    if(prop&&s.airflow&&strength>.015){
+      const reverse=thrust<0;
       for(let i=0;i<700;i++){
-        const u=(i/700+t*.17*(sim.np/1700))%1,x0=-4.65+explodedX('propeller',e),r0=.45+((i*23.717)%1)*1.72;
-        const x=reverse?x0+2.3-u*6:x0-2.3+u*6,rad=r0*(1-.2*u),a=i*2.39996+u*(feather?.05:.4);
-        this.addParticle(x,rad*Math.cos(a),rad*Math.sin(a),[.36,.80,.84],(feather?.12:.58)*Math.sin(Math.PI*u),4.0);
+        const u=(i/700+t*.17*Math.sqrt(strength))%1,x0=-4.65+explodedX('propeller',e),r0=.45+((i*23.717)%1)*1.72;
+        const x=reverse?x0+2.3-u*6:x0-2.3+u*6,rad=r0*(1-.2*u),a=i*2.39996+u*.4;
+        this.addParticle(x,rad*Math.cos(a),rad*Math.sin(a),[.36,.80,.84],.58*clamp(strength*1.5,0,1)*Math.sin(Math.PI*u),4.0);
       }
     }
     this.renderer.drawParticles(this.particles,this.particleCount);
   }
+}
+
+// Direction and visibility follow the moving blades, not the lever selection.
+// This illustrates induced flow only; it is not an aerodynamic thrust solution.
+export function propellerFlow(sim){
+  const featherFade=1-clamp((sim.pitch-65)/19,0,1);
+  const pitchEffect=Math.sin(2*sim.pitch*Math.PI/180);
+  return pitchEffect*featherFade*clamp(sim.np/1700,0,1.2)**2;
 }
 
 function multiplyLocal(a,b){const m=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)m[c*4+r]+=a[k*4+r]*b[c*4+k];return m;}

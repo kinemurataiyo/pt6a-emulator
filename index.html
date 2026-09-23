@@ -47,7 +47,27 @@
     <section class="run-controls" aria-label="Engine operating controls">
       <div class="run-state"><span class="eyebrow">ENGINE DEMONSTRATION</span><div class="run-buttons"><button id="start" class="button primary">Restart sequence</button><button id="stop" class="button">Shut down</button></div></div>
       <label class="slider-control"><span>Power demand <output id="power-output">50%</output></span><input id="power" type="range" min="0" max="100" step="1" value="50"><span class="range-ends"><small>IDLE</small><small>RATED POWER</small></span></label>
-      <label class="slider-control"><span>Propeller governor <output id="rpm-output">1,500 rpm</output></span><input id="rpm" type="range" min="1100" max="1700" step="10" value="1500"><span class="range-ends"><small>1,100</small><small>1,700 RPM</small></span></label>
+      <label class="slider-control"><span>Selected propeller RPM <output id="rpm-output">1,500 rpm</output></span><input id="rpm" type="range" min="1100" max="1700" step="10" value="1500" aria-describedby="rpm-help"><span class="range-ends"><small>1,100</small><small>1,700 RPM</small></span><small id="rpm-help" class="control-help">The governor changes blade pitch to hold this speed.</small></label>
+    </section>
+    <section id="prop-controls" class="prop-controls" aria-label="Propeller governor controls">
+      <div class="prop-controls-heading"><span class="eyebrow">PROPELLER GOVERNOR</span><button id="inspect-prop" class="text-button">Inspect the blades <span aria-hidden="true">↗</span></button></div>
+      <div class="prop-control-inputs">
+        <label class="prop-mode-control" for="prop-mode">Propeller control<select id="prop-mode" aria-describedby="prop-mode-help"><option value="govern">Constant speed · forward</option><option value="feather">Feather</option><option value="beta">Beta · ground fine</option><option value="reverse">Reverse · ground only</option></select></label>
+        <p id="prop-mode-help" class="control-help">Change the selected RPM or power demand and watch the governor adjust pitch.</p>
+        <label id="beta-control" class="slider-control beta-control" hidden><span>Ground beta position <output id="beta-output">7.5° selected</output></span><input id="beta" type="range" min="0" max="100" step="1" value="50"><span class="range-ends"><small>FINE STOP · 15°</small><small>FLAT · 0°</small></span></label>
+      </div>
+      <div class="prop-feedback">
+        <div class="pitch-study">
+          <svg class="pitch-profile" viewBox="0 0 230 120" role="img" aria-labelledby="pitch-profile-title"><title id="pitch-profile-title">Actual blade angle at 75 percent radius</title><path class="profile-axis" d="M28 75H206M114 12V112"/><text x="145" y="91">disc plane · 0°</text><text x="125" y="18">shaft axis</text><g id="pitch-profile-blade" transform="rotate(-27 114 75)"><path class="profile-blade" d="M61 75Q96 64 114 70L166 75Q121 82 61 75Z"/><path class="profile-chord" d="M61 75H166"/></g><circle class="profile-center" cx="114" cy="75" r="3"/></svg>
+          <div class="pitch-reading"><span>ACTUAL BLADE PITCH</span><strong id="pitch-value">27.0°</strong><small>at 75% radius · schematic</small></div>
+        </div>
+        <div class="prop-status">
+          <div class="prop-speed"><span>ACTUAL PROPELLER</span><strong id="prop-actual-rpm">1,500 <small>rpm</small></strong><small id="prop-rpm-error">Selected 1,500 rpm · on speed</small></div>
+          <div class="governor-action"><span>GOVERNOR ACTION</span><strong id="governor-state" role="status">On speed</strong><small id="prop-oil-flow">Oil held · blade angle held</small></div>
+          <p id="prop-protection" class="prop-protection" hidden></p>
+        </div>
+      </div>
+      <p class="prop-control-note">Oil supplied to the hub reduces pitch. Oil draining lets the counterweights and feathering spring increase pitch. Select Feather to watch the blades turn edge-on to the airflow.</p>
     </section>
     <div class="simulation-foot"><span id="sequence-note">Steady running · continuous combustion sustains itself after ignition.</span><span>Readings are illustrative.</span></div>
   </section>
@@ -57,7 +77,26 @@
     <div class="stage-actions"><button id="previous" class="button" aria-label="Previous stage">←</button><button id="next" class="button">Explore the air inlet <span aria-hidden="true">→</span></button></div>
   </aside>
 </main>
-<dialog id="about-dialog"><button id="close-about" class="close-dialog" aria-label="Close model information">×</button><span class="eyebrow">MODEL NOTES</span><h2>A window into the PT6A.</h2><p>This is an educational 3D reconstruction of the King Air 350’s PT6A–60A architecture. It is designed to explain the gas path, separate shafts, combustor, reduction gearbox, and propeller.</p><h3>What is represented</h3><p>Three axial compressor stages, a centrifugal impeller and diffuser, an annular reverse-flow combustor, one compressor turbine, two free power-turbine stages, two-stage planetary reduction, and a four-blade propeller.</p><h3>What is simplified</h3><p>Blade profiles, blade counts, dimensions, spacing, internal passages, accessories, and flame appearance are schematic. Motion is greatly slowed for inspection. Pressure, temperature, power, torque, and transient responses are illustrative calculations, not measured or certified performance. Combustion and flow particles explain direction and processes; they are not computational fluid dynamics.</p><p>Start, shutdown, power, and governor controls are teaching controls, not King Air operating procedures. This model is not suitable for flight, maintenance, or troubleshooting decisions.</p><h3>References</h3><ul><li><a href="https://www.rtx.com/prattwhitney/products/general-aviation-engines/pt6a" target="_blank" rel="noopener noreferrer">Pratt &amp; Whitney · PT6A architecture and aircraft applications</a></li><li><a href="https://studylib.net/doc/26274570/pt6a-60-series-training-manual" target="_blank" rel="noopener noreferrer">Pratt &amp; Whitney Canada · PT6A–60 Series training manual (2007), mirrored copy; compressor, combustion, turbines, and gearbox sections</a></li><li><a href="https://beechcraft.txtav.com/en/turboprop/king-air-360" target="_blank" rel="noopener noreferrer">Textron Aviation · King Air family engine and propeller specifications</a></li><li><a href="https://www.grc.nasa.gov/www/k-12/airplane/turbprp.html" target="_blank" rel="noopener noreferrer">NASA Glenn · Turboprop propulsion</a></li></ul><p class="small-muted">Independent educational project. Not affiliated with Pratt &amp; Whitney or Textron Aviation.</p></dialog>
+<dialog id="about-dialog">
+  <button id="close-about" class="close-dialog" aria-label="Close model information">×</button><span class="eyebrow">MODEL NOTES</span><h2>A window into the PT6A.</h2>
+  <p>This is an educational 3D reconstruction of the King Air 350’s PT6A–60A architecture. It is designed to explain the gas path, separate shafts, combustor, reduction gearbox, and propeller.</p>
+  <h3>What is represented</h3>
+  <p>Three axial compressor stages, a centrifugal impeller and diffuser, an annular reverse-flow combustor, one compressor turbine, two free power-turbine stages, two-stage planetary reduction, and a four-blade propeller. The propeller governor adjusts blade pitch to balance load and selected RPM, with feather, beta, reverse, and separate speed protection actions.</p>
+  <h3>What is simplified</h3>
+  <p>Blade profiles, blade counts, dimensions, spacing, internal passages, accessories, and flame appearance are schematic. Motion is greatly slowed for inspection. Pressure, temperature, power, torque, and transient responses are illustrative calculations, not measured or certified performance. Pitch limits, oil response, and inertia are teaching assumptions. Combustion and flow particles explain direction and processes; they are not computational fluid dynamics.</p>
+  <p>Start, shutdown, power, and governor controls are teaching controls, not King Air operating procedures. This model is not suitable for flight, maintenance, or troubleshooting decisions.</p>
+  <p><a href="./docs/propeller-governor.md" target="_blank" rel="noopener">Read the governor model notes</a> for the source-page mapping, numerical assumptions, and behavior checks.</p>
+  <h3>References</h3>
+  <ul>
+    <li>United Turbine · <em>PT6 Training Manual</em>, supplied reference; pages 40–51 cover fuel and propeller controls, page 58 covers feather/unfeather response, and page 62 describes idling in feather. The supplied PDF is not redistributed with this project.</li>
+    <li><a href="https://hartzellprop.com/MANUALS/139-0000-A.pdf" target="_blank" rel="noopener noreferrer">Hartzell · Propeller Owner’s Manual 139, Revision 24, March 2026</a>; printed pages 2-8, 2-9, 2-29, and 2-30 explain hydraulic pitch action, beta, constant-speed governing, and feathering.</li>
+    <li><a href="https://www.rtx.com/prattwhitney/products/general-aviation-engines/pt6a" target="_blank" rel="noopener noreferrer">Pratt &amp; Whitney · PT6A architecture and aircraft applications</a></li>
+    <li><a href="https://studylib.net/doc/26274570/pt6a-60-series-training-manual" target="_blank" rel="noopener noreferrer">Pratt &amp; Whitney Canada · PT6A–60 Series training manual (2007), mirrored copy; compressor, combustion, turbines, and gearbox sections</a></li>
+    <li><a href="https://beechcraft.txtav.com/en/turboprop/king-air-360" target="_blank" rel="noopener noreferrer">Textron Aviation · King Air family engine and propeller specifications</a></li>
+    <li><a href="https://www.grc.nasa.gov/www/k-12/airplane/turbprp.html" target="_blank" rel="noopener noreferrer">NASA Glenn · Turboprop propulsion</a></li>
+  </ul>
+  <p class="small-muted">Independent educational project. Not affiliated with Pratt &amp; Whitney or Textron Aviation.</p>
+</dialog>
 <script type="module" src="./app.js"></script>
 </body>
 </html>
